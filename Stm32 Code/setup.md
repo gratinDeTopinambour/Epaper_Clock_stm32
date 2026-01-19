@@ -103,12 +103,15 @@ File: `stm32f0xx_it.c`
 
 At the top of the file, in the **private variables** section, add:
 
+```c
 extern uint16_t minute;
+```
 
  2. Increment `minute` in the TIM3 Interrupt
 
 Inside `TIM3_IRQHandler` (or `TIM3_IRQHandler(void)`), add:
 
+```c
 void TIM3_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM3_IRQn 0 */
@@ -117,5 +120,6 @@ void TIM3_IRQHandler(void)
 
   HAL_TIM_IRQHandler(&htim3);
 }
+```
 
 Make sure the increment is inside the `USER CODE` section so it is not overwritten by code generation.
