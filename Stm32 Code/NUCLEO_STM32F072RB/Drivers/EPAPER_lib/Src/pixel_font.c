@@ -467,6 +467,10 @@ const uint8_t bpixel [] =
 	//Character: space (+65)
 	0b11111111,
 	0b11111111,
+
+	//Character: , (+66)
+	0b00111111,
+	0b11111111,
 };
 
 

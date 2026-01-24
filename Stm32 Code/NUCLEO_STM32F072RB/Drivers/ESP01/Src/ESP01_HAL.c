@@ -27,8 +27,8 @@ extern UART_HandleTypeDef huart1;
 UART_HandleTypeDef *wifi_uart = &huart1;
 
 /* UART used for debugging (PC terminal) */
-extern UART_HandleTypeDef huart2;
-UART_HandleTypeDef *pc_uart   = &huart2;
+//extern UART_HandleTypeDef huart2;
+//UART_HandleTypeDef *pc_uart   = &huart2;
 
 /* ==============================
  * DMA RX BUFFER
@@ -47,19 +47,19 @@ volatile uint16_t rx_last_pos = 0;     // Last read position in DMA buffer
  * @param  msg Null-terminated string to send.
  * @retval None.
  */
-void Send_To_PC(const char *msg)
-{
-    size_t len = strlen(msg);
-    size_t chunk_size = 128;
-    size_t sent = 0;
-
-    while (sent < len)
-    {
-        size_t to_send = (len - sent > chunk_size) ? chunk_size : (len - sent);
-        HAL_UART_Transmit(pc_uart, (uint8_t *)(msg + sent), to_send, HAL_MAX_DELAY);
-        sent += to_send;
-    }
-}
+//void Send_To_PC(const char *msg)
+//{
+//    size_t len = strlen(msg);
+//    size_t chunk_size = 128;
+//    size_t sent = 0;
+//
+//    while (sent < len)
+//    {
+//        size_t to_send = (len - sent > chunk_size) ? chunk_size : (len - sent);
+//        HAL_UART_Transmit(pc_uart, (uint8_t *)(msg + sent), to_send, HAL_MAX_DELAY);
+//        sent += to_send;
+//    }
+//}
 
 
 /**

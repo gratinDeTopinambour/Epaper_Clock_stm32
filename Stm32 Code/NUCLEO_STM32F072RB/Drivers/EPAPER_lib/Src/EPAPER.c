@@ -329,7 +329,7 @@ void EPAPER_Print_Char(const uint8_t *image,  uint8_t size, uint16_t x_start, ui
 
 static inline uint8_t char_pixel_width(char c)
 {
-    if (c == ' ')
+    if (c == ' ' || c == ',')
         return 3;   // 2 pixels glyph + 1 spacing
     else
         return 6;   // 5 pixels glyph + 1 spacing
@@ -349,8 +349,10 @@ static uint16_t font_index(char c)
         return 63 * 5;
     else if (c == '%')
         return 64 * 5;
+    else if (c == ' ')
+        return 65 * 5;
     else
-        return 65 * 5; // space / unknown
+        return (65 * 5 + 2); // , / unknown
 }
 
 /******************************************************************************
@@ -411,7 +413,7 @@ void EPAPER_Print_String(const char *string,  uint8_t size, uint16_t x_start, ui
 		uint16_t buf_index = x_cursor_px / size;
 		uint16_t ind = font_index(*string);
 
-		if (*string == ' ') {
+		if (*string == ' ' || *string == ',') {
 			memcpy(&line_buf[buf_index], &bpixel[ind], 2);
 		} else {
 			memcpy(&line_buf[buf_index], &bpixel[ind], 5);
@@ -692,9 +694,21 @@ parameter:  temp: temperature
 ******************************************************************************/
 void EPAPER_Print_temp(int temp)
 {
-	char string_temp[6];
-	sprintf(string_temp, "%3d*C", temp);
-	EPAPER_Print_String(string_temp,  4, 240, 360, 150);
+	char string_temp[7];
+	int dec_temp = temp%10;
+	int num_temp = temp/10;
+	if(temp <= 0)
+	{
+		dec_temp = 0;
+		num_temp = 0;
+	}
+	if(temp >= 1000)
+	{
+		dec_temp = 99;
+		num_temp = 9;
+	}
+	sprintf(string_temp, "%2d,%1d*C", num_temp, dec_temp);
+	EPAPER_Print_String(string_temp,  4, 218, 360, 150);
 }
 
 /******************************************************************************
@@ -705,7 +719,7 @@ void EPAPER_Print_press(uint32_t press)
 {
 	char string_press[9];
 	sprintf(string_press, "%4lu hPa", press);
-	EPAPER_Print_String(string_press,  3, 210, 360, 10);
+	EPAPER_Print_String(string_press,  3, 215, 360, 10);
 }
 
 /******************************************************************************
@@ -714,7 +728,7 @@ parameter:  hum: humidity in %
 ******************************************************************************/
 void EPAPER_Print_hum(uint32_t hum)
 {
-	char string_hum[6];
-	sprintf(string_hum, " %2lu %%", hum);
-	EPAPER_Print_String(string_hum,  4, 252, 360, 80);
+	char string_hum[5];
+	sprintf(string_hum, "%2lu %%", hum);
+	EPAPER_Print_String(string_hum,  4, 266, 360, 80);
 }

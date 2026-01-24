@@ -14,18 +14,18 @@
 #include <stdint.h>  // Types entiers standard (uint8_t, uint16_t, etc.)
 #include <string.h>  // Pour strlen, strcpy dans les fonctions inline
 
-#define ESP01_DEBUG 1 //log de debug
+#define ESP01_DEBUG 0 //log de debug
 
 #define ESP01_TIMEOUT 2000
 
 extern uint8_t dma_rx_buf[1024]; // Buffer DMA pour la réception ESP01
 extern UART_HandleTypeDef *wifi_uart;
 
-#ifdef UART_PC
-extern UART_HandleTypeDef *pc_uart;
-#endif //UART_PC
+//#ifdef UART_PC
+//extern UART_HandleTypeDef *pc_uart;
+//#endif //UART_PC
 
-void Send_To_PC(const char *msg);
+//void Send_To_PC(const char *msg);
 int Get_New_Data(uint8_t *buf, uint16_t bufsize);
 int Send_ATCMD_DMA(const char *cmd, char *response_buffer, size_t response_buf_size, const char *expected, uint32_t timeout_ms);
 int Read_DMA_Until_Pattern(const char *pattern, char *resp_buf, size_t bufsize, uint32_t timeout_ms);
