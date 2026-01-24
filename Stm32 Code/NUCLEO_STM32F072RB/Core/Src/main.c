@@ -79,8 +79,8 @@ static void MX_I2C1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint8_t day = 0;
+uint8_t prev_day = 0;
 uint8_t dd = 0;
-uint8_t prev_dd = 0;
 uint8_t mm = 0;
 uint16_t yy = 0;
 uint16_t minute = 0;
@@ -88,8 +88,13 @@ uint16_t prev_minute = 0;
 uint8_t moon_phase = 0;
 
 int temp = 0;
+int prev_temp = 0;
 uint32_t press = 0;
+uint32_t prev_press = 0;
 uint32_t hum = 0;
+uint32_t prev_hum = 0;
+
+uint8_t wifi_update_done = 0;
 /* USER CODE END 0 */
 
 /**
@@ -134,27 +139,23 @@ int main(void)
     /* Starting Error */
     Error_Handler();
   }
-
   BME_Init();
   BME_Read_Data(&temp, &press, &hum);
 
-  Init_Wifi("Wifi Flo et Val ", "floetvallesbg");
-  Get_Date(&day, &dd, &mm, &yy, &minute);
-  UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
-
-  char date_msg[100];
-  sprintf (date_msg, "day = %u\r\ndd = %u\r\nmm = %u\r\nyy = %u\r\nminute = %u\r\n",day,dd,mm,yy,minute);
-  Send_To_PC(date_msg);
+  Init_Wifi("WIFI_NAME", "WIFI_PWD");
+  if(Get_Date(&day, &dd, &mm, &yy, &minute) == 0){
+	UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
+  }
+  prev_minute = minute + 1111;
 
   moon_phase = Moon_Phase(dd,mm,yy);
-  sprintf (date_msg, "moon_phase = %u\r\n",moon_phase);
-  Send_To_PC(date_msg);
-
 
   EPAPER_Init();
   EPAPER_Clear();
+  HAL_Delay(500);
   EPAPER_Part_Init();
   EPAPER_KW_White_Display();
+  HAL_Delay(500);
 
   EPAPER_Print_temp(temp);
   EPAPER_Print_press(press);
@@ -164,51 +165,91 @@ int main(void)
   EPAPER_Print_Moon_Phase(moon_phase, minute, 360, 1080);
 
   prev_minute = minute;
-  prev_dd = dd;
+  prev_day = day;
+  prev_temp = temp;
+  prev_hum = hum;
+  prev_press = press;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	if(minute >= 1440){
-		minute = 0;
-		day++;
-		dd++;
-	}
-	if(day >= 7){
-		day = 0;
-	}
-	if(dd >= 32){
-		dd = 1;
-		mm++;
-	}
-	if(mm >= 12){
-		mm = 0;
-	}
+
+
 	if(prev_minute != minute)
 	{
+		if(minute >= 1440){
+			minute = 0;
+			day++;
+		}
+
 		EPAPER_Print_Hour(minute,  prev_minute);
 		EPAPER_Print_Moon_Phase(moon_phase, minute, 360, 1080);
 		prev_minute = minute;
 
 		/* update temp hum and press each minute */
 		BME_Read_Data(&temp, &press, &hum);
+
+		if(prev_temp != temp){
+			prev_temp = temp;
+			EPAPER_Print_temp(temp);
+		}
+		if(prev_press != press){
+			prev_press = press;
+			EPAPER_Print_press(press);
+		}
+		if(prev_hum != hum){
+			prev_hum = hum;
+			EPAPER_Print_hum(hum);
+		}
+	}
+
+	if(prev_day != day)
+	{
+		if(day >= 7){
+			day = 0;
+		}
+		prev_day = day;
+
+		next_day(&dd,&mm,&yy);
+
+		EPAPER_Print_Date(day,  dd, mm);
+		moon_phase = Moon_Phase(dd,mm,yy);
+	}
+
+	/* reset screen every day at 4h*/
+	if((minute == 240 || minute == 601 || minute == 960 || minute == 1320) && !wifi_update_done){
+		wifi_update_done = 1;
+
+		Init_Wifi("WIFI_NAME", "WIFI_PWD");
+		if(Get_Date(&day, &dd, &mm, &yy, &minute) == 0){
+			UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
+		}
+		prev_minute = minute + 1111;
+
+		EPAPER_Init();
+		EPAPER_Clear();
+		HAL_Delay(500);
+		EPAPER_Part_Init();
+		EPAPER_KW_White_Display();
+		HAL_Delay(500);
+
 		EPAPER_Print_temp(temp);
 		EPAPER_Print_press(press);
 		EPAPER_Print_hum(hum);
+		EPAPER_Print_Date(day,  dd, mm);
+		EPAPER_Print_Hour(minute,  prev_minute);
+		EPAPER_Print_Moon_Phase(moon_phase, minute, 360, 1080);
+		prev_minute = minute;
+		prev_day = day;
+		prev_temp = temp;
+		prev_hum = hum;
+		prev_press = press;
 	}
 
-	if(prev_dd != dd)
-	{
-		EPAPER_Print_Date(day,  dd, mm);
-		prev_dd = dd;
-	}
-	/* reset screen every day at 4h*/
-	if(minute == 240){
-		  Init_Wifi("Wifi Flo et Val ", "floetvallesbg");
-		  Get_Date(&day, &dd, &mm, &yy, &minute);
-		  UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
+	if(minute == 241 || minute == 601 || minute == 961 || minute == 1321){
+		wifi_update_done = 0;
 	}
     /* USER CODE END WHILE */
 
@@ -230,11 +271,14 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -244,7 +288,7 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI48;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
@@ -495,11 +539,18 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, RST_Pin|SPI_CS_Pin|DC_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : BUSY_Pin */
+  GPIO_InitStruct.Pin = BUSY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BUSY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RST_Pin SPI_CS_Pin DC_Pin */
   GPIO_InitStruct.Pin = RST_Pin|SPI_CS_Pin|DC_Pin;
@@ -507,12 +558,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : BUSY_Pin */
-  GPIO_InitStruct.Pin = BUSY_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BUSY_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
