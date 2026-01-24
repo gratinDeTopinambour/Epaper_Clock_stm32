@@ -19,6 +19,23 @@
 #include <math.h>
 
 /**
+ * @brief Increment a date by one day
+ *
+ * This function advances the given date by exactly one day.
+ * It correctly handles:
+ *  - end-of-month transitions,
+ *  - end-of-year transitions,
+ *  - leap years.
+ *
+ * The date is updated in place.
+ *
+ * @param dd Pointer to day of month (1–31)
+ * @param mm Pointer to month index (0 = January ... 11 = December)
+ * @param yy Pointer to full year (e.g. 2026)
+ */
+void next_day(uint8_t *dd, uint8_t *mm, uint16_t *yy);
+
+/**
  * @brief Convert a UTC date/time to Paris local time (CET / CEST)
  *
  * This function applies the appropriate UTC offset for Paris:

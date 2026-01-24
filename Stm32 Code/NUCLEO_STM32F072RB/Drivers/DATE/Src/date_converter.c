@@ -160,6 +160,30 @@ static int days_from_2014(int day, int month, int year) {
 }
 
 /**
+ * @brief Increment date by one day
+ *
+ * @param dd Day of month (1–31)
+ * @param mm Month index (0 = January ... 11 = December)
+ * @param yy Full year (e.g. 2026)
+ */
+void next_day(uint8_t *dd, uint8_t *mm, uint16_t *yy)
+{
+    (*dd)++;
+
+    /* End of month */
+    if (*dd > days_in_month(*mm, *yy)) {
+        *dd = 1;
+        (*mm)++;
+
+        /* End of year */
+        if (*mm > 11) {
+            *mm = 0;
+            (*yy)++;
+        }
+    }
+}
+
+/**
  * @brief Convertit une date/heure UTC en heure locale Paris (CET / CEST)
  *
  * @param day    Jour de la semaine (0 = Dimanche ... 6 = Samedi)
