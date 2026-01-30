@@ -137,7 +137,7 @@ int main(void)
   BME_Init();
   BME_Read_Data(&temp, &press, &hum);
 
-  Init_Wifi("Wifi Flo et Val ", "floetvallesbg");
+  Init_Wifi("Wifi_name", "Wifi_pswd");
   if(Get_Date(&day, &dd, &mm, &yy, &minute) == 0){
 	UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
   }
@@ -214,10 +214,10 @@ int main(void)
 	}
 
 	/* reset screen every day at 4h*/
-	if((minute == 240 || minute == 601 || minute == 960 || minute == 1320) && !wifi_update_done){
+	if((minute == 240 || minute == 600 || minute == 960 || minute == 1320) && !wifi_update_done){
 		wifi_update_done = 1;
 
-		Init_Wifi("Wifi Flo et Val ", "floetvallesbg");
+		Init_Wifi("Wifi_name", "Wifi_pswd");
 		if(Get_Date(&day, &dd, &mm, &yy, &minute) == 0){
 			UTC_to_Paris(&day, &dd, &mm, &yy, &minute);
 		}
@@ -530,3 +530,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
