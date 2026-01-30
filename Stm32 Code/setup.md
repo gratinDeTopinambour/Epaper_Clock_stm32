@@ -34,7 +34,7 @@
 - PA6 – DC  
 
 **Status pin (GPIO input)**
-- PA12 – BUSY  
+- PA0 – BUSY  
 
 ---
 
